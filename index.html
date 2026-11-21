@@ -6,13 +6,117 @@
   <title>Market Troiano - Calcolo Prezzi & Fatture</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    @page {
+      size: A4 portrait;
+      margin: 8mm;
+    }
+
+    #printOnlySheet {
+      display: none;
+    }
+
     @media print {
-      .no-print { display: none !important; }
-      body { background: white !important; padding: 0 !important; font-size: 11px !important; }
-      .print-container { box-shadow: none !important; border: none !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
-      table { width: 100% !important; border-collapse: collapse !important; }
-      th, td { border: 1px solid #cbd5e1 !important; padding: 4px 6px !important; }
-      input { border: none !important; background: transparent !important; padding: 0 !important; width: auto !important; }
+      .no-print, header, main {
+        display: none !important;
+      }
+      body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        color: #000000 !important;
+        font-family: Arial, Helvetica, sans-serif !important;
+      }
+      #printOnlySheet {
+        display: block !important;
+        width: 100% !important;
+      }
+      .print-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        border-bottom: 1.5px solid #000;
+        padding-bottom: 3px;
+        margin-bottom: 6px;
+      }
+      .print-header h1 {
+        font-size: 13px;
+        font-weight: 800;
+        margin: 0;
+        text-transform: uppercase;
+      }
+      .print-header span {
+        font-size: 9.5px;
+        color: #333;
+      }
+      .print-grid {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        width: 100%;
+      }
+      .print-col {
+        flex: 1;
+        width: 100%;
+      }
+      .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+      .print-table th {
+        background-color: #e2e8f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        border: 1px solid #64748b;
+        padding: 2.5px 3px;
+        font-weight: 700;
+        text-align: left;
+        white-space: nowrap;
+      }
+      .print-table td {
+        border: 1px solid #94a3b8;
+        padding: 2px 3px;
+        vertical-align: middle;
+        line-height: 1.15;
+      }
+      .print-table tr:nth-child(even) td {
+        background-color: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .col-prod {
+        width: auto;
+        word-break: break-word;
+      }
+      .col-qty {
+        width: 28px;
+        text-align: center !important;
+        white-space: nowrap;
+      }
+      .col-net {
+        width: 46px;
+        text-align: right !important;
+        white-space: nowrap;
+      }
+      .col-iva {
+        width: 28px;
+        text-align: center !important;
+        white-space: nowrap;
+      }
+      .col-ivato {
+        width: 46px;
+        text-align: right !important;
+        white-space: nowrap;
+      }
+      .col-sell {
+        width: 50px;
+        text-align: right !important;
+        font-weight: 800 !important;
+        background-color: #ecfdf5 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        white-space: nowrap;
+      }
     }
   </style>
 </head>
@@ -45,11 +149,11 @@
     </div>
   </div>
 
-  <!-- MAIN CONTAINER -->
-  <main class="max-w-5xl mx-auto px-4 mt-6 print-container">
+  <!-- MAIN CONTAINER (INTERFACCIA SCHERMO) -->
+  <main class="max-w-5xl mx-auto px-4 mt-6 no-print">
 
     <!-- BOX CARICAMENTO / FOTOCAMERA -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6 no-print">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <h2 class="font-bold text-base text-slate-900">1. Carica o Fotografa Fattura / D.D.T.</h2>
@@ -97,17 +201,17 @@
       <div id="statusBox" class="hidden mt-4 p-3.5 rounded-xl text-sm flex items-center gap-3"></div>
     </div>
 
-    <!-- RISULTATI TABELLA -->
-    <div id="resultsSection" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-5 print-container">
+    <!-- RISULTATI TABELLA A SCHERMO -->
+    <div id="resultsSection" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200">
         <div>
           <h2 class="font-bold text-lg text-slate-900">Listino Prezzi Calcolato (A-Z)</h2>
           <p class="text-xs text-slate-500" id="invoiceMeta">Market Troiano - Via Gargano 148, Manfredonia</p>
         </div>
-        <div class="flex flex-wrap gap-2 no-print">
+        <div class="flex flex-wrap gap-2">
           <button onclick="addEmptyRow()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-300">+ Riga</button>
           <button onclick="sortItemsAlphabetically()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-300">Ordina A-Z</button>
-          <button onclick="window.print()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm">🖨️ Stampa / Salva PDF</button>
+          <button onclick="prepareAndPrint()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm">🖨️ Stampa / Salva PDF (1 Pagina)</button>
         </div>
       </div>
 
@@ -120,9 +224,9 @@
               <th class="py-2.5 px-2 font-bold text-right w-24">Netto Unit.</th>
               <th class="py-2.5 px-2 font-bold text-center w-16">IVA</th>
               <th class="py-2.5 px-2 font-bold text-right w-24 bg-slate-200/60">Acq. Ivato</th>
-              <th class="py-2.5 px-2 font-bold text-center w-16 no-print">Ric.%</th>
+              <th class="py-2.5 px-2 font-bold text-center w-16">Ric.%</th>
               <th class="py-2.5 px-2 font-bold text-right w-28 bg-emerald-50 text-emerald-900">Vendita</th>
-              <th class="py-2.5 px-1 w-8 no-print"></th>
+              <th class="py-2.5 px-1 w-8"></th>
             </tr>
           </thead>
           <tbody id="productsTableBody" class="divide-y divide-slate-200"></tbody>
@@ -132,9 +236,13 @@
 
   </main>
 
+  <!-- FOGLIO DEDICATO SOLO ALLA STAMPA / PDF SU SINGOLA PAGINA -->
+  <div id="printOnlySheet"></div>
+
   <script>
     let selectedFiles = [];
     let productsData = [];
+    let currentMetaText = '';
 
     window.addEventListener('DOMContentLoaded', () => {
       const savedKey = localStorage.getItem('gemini_api_key_market');
@@ -253,7 +361,6 @@
       });
     }
 
-    // Restituisce lista ordinata di modelli disponibili per tentare fallback automatico se uno è intasato
     async function getCandidateModels(apiKey) {
       const defaults = [
         'models/gemini-3.8-flash',
@@ -335,11 +442,8 @@
           }
 
           lastError = data.error?.message || `Errore ${response.status}`;
-          // Se il modello è saturo o non disponibile, passa subito al prossimo
-          console.warn(`Modello ${shortName} saltato (${lastError}), passo al successivo...`);
         } catch (err) {
           lastError = err.name === 'AbortError' ? 'Timeout server' : err.message;
-          console.warn(`Errore su ${shortName} (${lastError}), passo al successivo...`);
         }
       }
 
@@ -405,9 +509,10 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
 
         productsData.sort((a, b) => a.nome.localeCompare(b.nome, 'it', { sensitivity: 'base' }));
 
-        const metaText = [parsed.fornitore, parsed.data].filter(Boolean).join(' • ');
-        document.getElementById('invoiceMeta').textContent = metaText
-          ? `Fornitore: ${metaText} (${productsData.length} articoli)`
+        const metaParts = [parsed.fornitore, parsed.data].filter(x => x && !x.toLowerCase().includes('non specificat'));
+        currentMetaText = metaParts.join(' • ');
+        document.getElementById('invoiceMeta').textContent = currentMetaText
+          ? `Fornitore: ${currentMetaText} (${productsData.length} articoli)`
           : `${productsData.length} articoli estratti`;
 
         renderTable();
@@ -460,13 +565,13 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
           <td class="py-2 px-2 text-right font-semibold text-slate-700 bg-slate-100/70">
             ${acqIvato} €
           </td>
-          <td class="py-2 px-2 text-center no-print">
+          <td class="py-2 px-2 text-center">
             <input type="number" step="1" value="${item.ricarico}" onchange="updateItem(${index}, 'ricarico', this.value)" class="w-12 text-center bg-transparent border-b border-slate-200 focus:border-emerald-500 focus:outline-none" />%
           </td>
           <td class="py-2 px-2 text-right font-bold text-emerald-800 bg-emerald-50/80 text-sm sm:text-base">
             ${vendita} €
           </td>
-          <td class="py-2 px-1 text-center no-print">
+          <td class="py-2 px-1 text-center">
             <button onclick="deleteRow(${index})" class="text-slate-400 hover:text-red-600 font-bold">✕</button>
           </td>
         `;
@@ -497,6 +602,85 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
     function sortItemsAlphabetically() {
       productsData.sort((a, b) => a.nome.localeCompare(b.nome, 'it', { sensitivity: 'base' }));
       renderTable();
+    }
+
+    function buildPrintTableHtml(itemsSlice, fontSizePx) {
+      let rowsHtml = itemsSlice.map(item => {
+        const { acqIvato, vendita } = calculateRowPrices(item);
+        const nettoFormatted = Number(item.netto).toFixed(2);
+        return `
+          <tr>
+            <td class="col-prod">${item.nome}</td>
+            <td class="col-qty">${item.quantita}</td>
+            <td class="col-net">${nettoFormatted} €</td>
+            <td class="col-iva">${item.iva}%</td>
+            <td class="col-ivato">${acqIvato} €</td>
+            <td class="col-sell">${vendita} €</td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <table class="print-table" style="font-size: ${fontSizePx}px;">
+          <thead>
+            <tr>
+              <th class="col-prod">Prodotto</th>
+              <th class="col-qty">Q.tà</th>
+              <th class="col-net">Netto</th>
+              <th class="col-iva">IVA</th>
+              <th class="col-ivato">Acq. Iv.</th>
+              <th class="col-sell">Vendita</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function prepareAndPrint() {
+      // Ordina sempre dalla A alla Z prima di generare la stampa
+      sortItemsAlphabetically();
+
+      const total = productsData.length;
+      const printSheet = document.getElementById('printOnlySheet');
+      const today = new Date().toLocaleDateString('it-IT');
+      const headerSubtitle = currentMetaText
+        ? `${currentMetaText} • ${total} articoli • ${today}`
+        : `${total} articoli • ${today}`;
+
+      // Se ci sono fino a 32 articoli usa 1 colonna larga; oltre 32 articoli divide in 2 colonne affiancate per stare sempre in 1 pagina A4
+      let bodyHtml = '';
+      if (total <= 32) {
+        const fontSize = total <= 22 ? 10.5 : 9.2;
+        bodyHtml = `
+          <div class="print-grid">
+            <div class="print-col">${buildPrintTableHtml(productsData, fontSize)}</div>
+          </div>
+        `;
+      } else {
+        const mid = Math.ceil(total / 2);
+        const leftItems = productsData.slice(0, mid);
+        const rightItems = productsData.slice(mid);
+        const fontSize = total <= 60 ? 8.2 : 7.2;
+        bodyHtml = `
+          <div class="print-grid">
+            <div class="print-col">${buildPrintTableHtml(leftItems, fontSize)}</div>
+            <div class="print-col">${buildPrintTableHtml(rightItems, fontSize)}</div>
+          </div>
+        `;
+      }
+
+      printSheet.innerHTML = `
+        <div class="print-header">
+          <h1>Market Troiano — Listino Prezzi (A-Z)</h1>
+          <span>${headerSubtitle}</span>
+        </div>
+        ${bodyHtml}
+      `;
+
+      window.print();
     }
   </script>
 </body>
