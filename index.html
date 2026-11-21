@@ -215,6 +215,9 @@
         </div>
       </div>
 
+      <!-- BOX QUADRATURA CONTABILE -->
+      <div id="reconciliationBox" class="mb-4 p-3 rounded-xl border text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2"></div>
+
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
@@ -243,6 +246,7 @@
     let selectedFiles = [];
     let productsData = [];
     let currentMetaText = '';
+    let docTotals = { imponibile: null, totaleIvato: null };
 
     window.addEventListener('DOMContentLoaded', () => {
       const savedKey = localStorage.getItem('gemini_api_key_market');
@@ -320,6 +324,7 @@
       });
     }
 
+    // Alta definizione (2400px, qualità 0.90) per leggere nitidamente anche i decimali piccoli da foto
     function prepareFilePart(file) {
       return new Promise((resolve, reject) => {
         if (!file.type.startsWith('image/')) {
@@ -336,7 +341,7 @@
         reader.onload = (e) => {
           const img = new Image();
           img.onload = () => {
-            const MAX_DIM = 1800;
+            const MAX_DIM = 2400;
             let w = img.width;
             let h = img.height;
             if (w > MAX_DIM || h > MAX_DIM) {
@@ -348,7 +353,7 @@
             canvas.height = h;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, w, h);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
             resolve({
               inlineData: { data: dataUrl.split(',')[1], mimeType: 'image/jpeg' }
             });
@@ -462,12 +467,12 @@
       btn.disabled = true;
 
       try {
-        showStatus('Ottimizzazione immagine in corso...', 'loading');
+        showStatus('Ottimizzazione immagine HD in corso...', 'loading');
         const fileParts = await Promise.all(selectedFiles.map(prepareFilePart));
         const candidateModels = await getCandidateModels(apiKey);
 
         const prompt = `Sei un assistente contabile esperto per un negozio di alimentari e salumeria italiano (Market Troiano).
-Analizza attentamente le immagini/PDF di questa fattura o D.D.T. fornitore ed estrai TUTTI gli articoli acquistati.
+Analizza con la massima precisione le immagini/PDF di questa fattura o D.D.T. fornitore ed estrai TUTTI gli articoli acquistati e i totali del documento.
 
 REGOLE DI CALCOLO FONDAMENTALI:
 1. Per ogni riga prodotto, individua la descrizione pulita e leggibile dell'articolo.
@@ -477,18 +482,22 @@ REGOLE DI CALCOLO FONDAMENTALI:
    - Se la fattura mostra il prezzo lordo e uno o più sconti (es. sconto 10%, o sconto 5%+5%, o sconto in valore), applica gli sconti al prezzo prima di calcolare il prezzo netto unitario.
    - Se è un omaggio puro a costo zero, indica prezzo_netto_unitario: 0.
 4. Individua l'aliquota IVA corretta per ogni prodotto (solo numero intero: 4, 10, oppure 22). Se non è esplicitata sulla riga, deducila dal riepilogo IVA della fattura o dalla natura alimentare del prodotto (pane/latte/ortofrutta 4%, salumi/formaggi/carne/acqua 10%, detersivi/bibite/alcolici 22%).
-5. Individua il nome del fornitore e la data del documento se presenti.
+5. Se una cifra (quantità, prezzo o sconto) è sfocata, piegata o incerta nella foto, imposta "incerto": true su quella riga; altrimenti "incerto": false.
+6. Leggi a fondo pagina il "totale_imponibile_documento" (la somma netta prima dell'IVA) e il "totale_ivato_documento" (il totale finale fattura IVA compresa), se presenti sul documento (altrimenti metti null).
 
 Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
 {
   "fornitore": "Nome Fornitore",
   "data": "GG/MM/AAAA",
+  "totale_imponibile_documento": 145.80,
+  "totale_ivato_documento": 160.38,
   "prodotti": [
     {
       "nome": "Nome Prodotto Pulito",
       "quantita": 12,
       "prezzo_netto_unitario": 1.25,
-      "iva": 10
+      "iva": 10,
+      "incerto": false
     }
   ]
 }`;
@@ -499,12 +508,22 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
         const parsed = JSON.parse(cleanJson);
         const defaultMarkup = parseFloat(document.getElementById('defaultMarkup').value) || 25;
 
+        docTotals = {
+          imponibile: parsed.totale_imponibile_documento !== null && parsed.totale_imponibile_documento !== undefined
+            ? Number(parsed.totale_imponibile_documento)
+            : null,
+          totaleIvato: parsed.totale_ivato_documento !== null && parsed.totale_ivato_documento !== undefined
+            ? Number(parsed.totale_ivato_documento)
+            : null
+        };
+
         productsData = (parsed.prodotti || []).map(p => ({
           nome: p.nome || 'Articolo',
           quantita: Number(p.quantita) || 1,
           netto: Number(p.prezzo_netto_unitario) || 0,
           iva: Number(p.iva) || 10,
-          ricarico: defaultMarkup
+          ricarico: defaultMarkup,
+          incerto: Boolean(p.incerto)
         }));
 
         productsData.sort((a, b) => a.nome.localeCompare(b.nome, 'it', { sensitivity: 'base' }));
@@ -536,6 +555,76 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
       };
     }
 
+    function updateReconciliationBox() {
+      const box = document.getElementById('reconciliationBox');
+      let calcImponibile = 0;
+      let calcIvato = 0;
+      let uncertainCount = 0;
+
+      productsData.forEach(item => {
+        const rowNet = item.quantita * item.netto;
+        calcImponibile += rowNet;
+        calcIvato += rowNet * (1 + item.iva / 100);
+        if (item.incerto) uncertainCount++;
+      });
+
+      const uncertainBadge = uncertainCount > 0
+        ? `<span class="inline-block bg-amber-200 text-amber-950 font-bold px-2 py-0.5 rounded ml-1">⚠️ ${uncertainCount} riga/e evidenziate in giallo da controllare</span>`
+        : '';
+
+      if (docTotals.imponibile !== null && docTotals.imponibile > 0) {
+        const diff = Math.abs(calcImponibile - docTotals.imponibile);
+        if (diff <= 0.15) {
+          box.className = 'mb-4 p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+          box.innerHTML = `
+            <div>
+              <strong>✅ Quadratura Contabile OK:</strong> Imponibile calcolato <strong>${calcImponibile.toFixed(2)} €</strong> vs Fattura <strong>${docTotals.imponibile.toFixed(2)} €</strong>.
+              ${uncertainBadge}
+            </div>
+            <div class="text-xs text-emerald-700">Tot. Ivato stimato: <strong>${calcIvato.toFixed(2)} €</strong></div>
+          `;
+        } else {
+          box.className = 'mb-4 p-3 rounded-xl border border-red-300 bg-red-50 text-red-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+          box.innerHTML = `
+            <div>
+              <strong>⚠️ Attenzione Quadratura (scarto di ${diff.toFixed(2)} €):</strong> Somma righe <strong>${calcImponibile.toFixed(2)} €</strong> vs Totale Fattura <strong>${docTotals.imponibile.toFixed(2)} €</strong>. Controlla quantità o sconti!
+              ${uncertainBadge}
+            </div>
+            <div class="text-xs text-red-700">Tot. Ivato stimato: <strong>${calcIvato.toFixed(2)} €</strong></div>
+          `;
+        }
+      } else if (docTotals.totaleIvato !== null && docTotals.totaleIvato > 0) {
+        const diff = Math.abs(calcIvato - docTotals.totaleIvato);
+        if (diff <= 0.20) {
+          box.className = 'mb-4 p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+          box.innerHTML = `
+            <div>
+              <strong>✅ Quadratura Totale OK:</strong> Ivato calcolato <strong>${calcIvato.toFixed(2)} €</strong> vs Fattura <strong>${docTotals.totaleIvato.toFixed(2)} €</strong>.
+              ${uncertainBadge}
+            </div>
+            <div class="text-xs text-emerald-700">Imponibile calcolato: <strong>${calcImponibile.toFixed(2)} €</strong></div>
+          `;
+        } else {
+          box.className = 'mb-4 p-3 rounded-xl border border-red-300 bg-red-50 text-red-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+          box.innerHTML = `
+            <div>
+              <strong>⚠️ Attenzione Quadratura (scarto di ${diff.toFixed(2)} €):</strong> Ivato righe <strong>${calcIvato.toFixed(2)} €</strong> vs Totale Fattura <strong>${docTotals.totaleIvato.toFixed(2)} €</strong>.
+              ${uncertainBadge}
+            </div>
+          `;
+        }
+      } else {
+        box.className = 'mb-4 p-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+        box.innerHTML = `
+          <div>
+            <strong>Riepilogo Calcolato:</strong> Imponibile righe <strong>${calcImponibile.toFixed(2)} €</strong> • Totale Ivato <strong>${calcIvato.toFixed(2)} €</strong>.
+            ${uncertainBadge}
+          </div>
+          <span class="text-xs text-slate-500">Totale documento non visibile nella foto</span>
+        `;
+      }
+    }
+
     function renderTable() {
       const tbody = document.getElementById('productsTableBody');
       tbody.innerHTML = '';
@@ -543,11 +632,14 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
       productsData.forEach((item, index) => {
         const { acqIvato, vendita } = calculateRowPrices(item);
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50';
+        tr.className = item.incerto ? 'bg-amber-100/80 hover:bg-amber-100' : 'hover:bg-slate-50';
 
         tr.innerHTML = `
           <td class="py-2 px-2">
-            <input type="text" value="${item.nome.replace(/"/g, '"')}" onchange="updateItem(${index}, 'nome', this.value)" class="w-full font-medium text-slate-900 bg-transparent border-b border-transparent focus:border-emerald-500 focus:outline-none" />
+            <div class="flex items-center gap-1">
+              ${item.incerto ? '<span title="Cifra poco nitida nella foto: verifica e modifica se necessario" class="text-amber-600 font-bold">⚠️</span>' : ''}
+              <input type="text" value="${item.nome.replace(/"/g, '"')}" onchange="updateItem(${index}, 'nome', this.value)" class="w-full font-medium text-slate-900 bg-transparent border-b border-transparent focus:border-emerald-500 focus:outline-none" />
+            </div>
           </td>
           <td class="py-2 px-2 text-center">
             <input type="number" step="0.01" value="${item.quantita}" onchange="updateItem(${index}, 'quantita', this.value)" class="w-14 text-center bg-transparent border-b border-slate-200 focus:border-emerald-500 focus:outline-none" />
@@ -577,6 +669,8 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
         `;
         tbody.appendChild(tr);
       });
+
+      updateReconciliationBox();
     }
 
     function updateItem(index, field, value) {
@@ -584,6 +678,7 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
         productsData[index].nome = value;
       } else {
         productsData[index][field] = parseFloat(value) || 0;
+        productsData[index].incerto = false;
       }
       renderTable();
     }
@@ -595,7 +690,7 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
 
     function addEmptyRow() {
       const defaultMarkup = parseFloat(document.getElementById('defaultMarkup').value) || 25;
-      productsData.push({ nome: 'Nuovo Articolo', quantita: 1, netto: 0, iva: 10, ricarico: defaultMarkup });
+      productsData.push({ nome: 'Nuovo Articolo', quantita: 1, netto: 0, iva: 10, ricarico: defaultMarkup, incerto: false });
       renderTable();
     }
 
@@ -640,7 +735,6 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
     }
 
     function prepareAndPrint() {
-      // Ordina sempre dalla A alla Z prima di generare la stampa
       sortItemsAlphabetically();
 
       const total = productsData.length;
@@ -650,7 +744,6 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
         ? `${currentMetaText} • ${total} articoli • ${today}`
         : `${total} articoli • ${today}`;
 
-      // Se ci sono fino a 32 articoli usa 1 colonna larga; oltre 32 articoli divide in 2 colonne affiancate per stare sempre in 1 pagina A4
       let bodyHtml = '';
       if (total <= 32) {
         const fontSize = total <= 22 ? 10.5 : 9.2;
