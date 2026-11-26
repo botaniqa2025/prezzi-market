@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Market Troiano - Calcolo Prezzi & Fatture</title>
+  <title>PrezzoFacile • Market Troiano</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#324A53" />
+  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
@@ -24,7 +27,7 @@
         background: #ffffff !important;
         margin: 0 !important;
         padding: 0 !important;
-        color: #000000 !important;
+        color: #324A53 !important;
         font-family: Arial, Helvetica, sans-serif !important;
       }
       #printOnlySheet {
@@ -35,7 +38,7 @@
         display: flex;
         justify-content: space-between;
         align-items: baseline;
-        border-bottom: 1.5px solid #000;
+        border-bottom: 2px solid #324A53;
         padding-bottom: 3px;
         margin-bottom: 6px;
       }
@@ -44,10 +47,11 @@
         font-weight: 800;
         margin: 0;
         text-transform: uppercase;
+        color: #324A53;
       }
       .print-header span {
         font-size: 9.5px;
-        color: #333;
+        color: #406A77;
       }
       .print-grid {
         display: flex;
@@ -65,23 +69,24 @@
         table-layout: fixed;
       }
       .print-table th {
-        background-color: #e2e8f0 !important;
+        background-color: #DCEFF1 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
-        border: 1px solid #64748b;
+        border: 1px solid #5F96A4;
         padding: 2.5px 3px;
         font-weight: 700;
         text-align: left;
+        color: #324A53;
         white-space: nowrap;
       }
       .print-table td {
-        border: 1px solid #94a3b8;
+        border: 1px solid #8DBDC7;
         padding: 2px 3px;
         vertical-align: middle;
         line-height: 1.15;
       }
       .print-table tr:nth-child(even) td {
-        background-color: #f8fafc !important;
+        background-color: #f8fbfc !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
@@ -113,7 +118,8 @@
         width: 50px;
         text-align: right !important;
         font-weight: 800 !important;
-        background-color: #ecfdf5 !important;
+        background-color: #DCEFF1 !important;
+        color: #324A53 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
         white-space: nowrap;
@@ -121,16 +127,25 @@
     }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen pb-12">
+<body class="bg-[#F2F7F8] text-[#324A53] min-h-screen pb-12">
 
-  <!-- HEADER -->
-  <header class="bg-emerald-700 text-white shadow-md no-print">
-    <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-      <div>
-        <h1 class="text-xl font-bold tracking-tight">Market Troiano</h1>
-        <p class="text-xs text-emerald-100">Calcolo Fatture, IVA e Ricarico +25%</p>
+  <!-- HEADER (PALETTE: #324A53 -> #406A77 + ACCENTO #8DBDC7 + LOGO BIANCO) -->
+  <header class="bg-gradient-to-r from-[#324A53] via-[#324A53] to-[#406A77] text-white shadow-md no-print border-b-2 border-[#8DBDC7]">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-white rounded-xl px-2.5 py-1.5 shadow-sm border border-[#8DBDC7]/60 flex items-center justify-center shrink-0">
+          <img src="logo.png" alt="Market Troiano" class="h-8 sm:h-9 w-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+          <span style="display:none;" class="font-black text-xs tracking-tight text-[#324A53] px-1">MARKET TROIANO</span>
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-black tracking-tight text-white">
+            Prezzo<span class="text-[#8DBDC7]">Facile</span>
+          </h1>
+          <p class="text-xs text-[#DCEFF1]">Market Troiano • Calcolo Fatture, IVA e Ricarico +25%</p>
+        </div>
       </div>
-      <button onclick="toggleApiModal()" class="bg-emerald-800 hover:bg-emerald-900 text-xs px-3 py-2 rounded-lg border border-emerald-600 flex items-center gap-1.5 transition">
+
+      <button onclick="toggleApiModal()" class="bg-white/10 hover:bg-white/20 text-xs font-semibold px-3 py-2 rounded-xl border border-white/20 flex items-center gap-1.5 transition">
         <span>🔑 Chiave API</span>
         <span id="apiStatusDot" class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
       </button>
@@ -138,14 +153,14 @@
   </header>
 
   <!-- MODALE CHIAVE API -->
-  <div id="apiModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 no-print">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-      <h2 class="text-lg font-bold text-slate-900 mb-1">Configura Chiave Gemini API</h2>
-      <p class="text-xs text-slate-500 mb-4">La chiave viene salvata solo nella memoria di questo browser/dispositivo. Non viene inviata a GitHub.</p>
-      <input type="password" id="apiKeyInput" placeholder="Incolla qui la chiave AIzaSy..." class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-600" />
+  <div id="apiModal" class="fixed inset-0 bg-[#324A53]/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#8DBDC7]">
+      <h2 class="text-lg font-extrabold text-[#324A53] mb-1">Configura Chiave Gemini API</h2>
+      <p class="text-xs text-[#406A77] mb-4">La chiave viene salvata solo nella memoria di questo browser/dispositivo. Non viene inviata a GitHub.</p>
+      <input type="password" id="apiKeyInput" placeholder="Incolla qui la chiave AIzaSy..." class="w-full border border-[#8DBDC7] rounded-xl px-3.5 py-2.5 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-[#406A77]" />
       <div class="flex justify-end gap-2">
-        <button onclick="toggleApiModal()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Chiudi</button>
-        <button onclick="saveApiKey()" class="px-4 py-2 text-sm bg-emerald-700 hover:bg-emerald-800 text-white font-semibold rounded-xl">Salva Chiave</button>
+        <button onclick="toggleApiModal()" class="px-4 py-2 text-sm text-[#406A77] hover:bg-[#DCEFF1]/50 rounded-xl">Chiudi</button>
+        <button onclick="saveApiKey()" class="px-4 py-2 text-sm bg-[#324A53] hover:bg-[#406A77] text-white font-semibold rounded-xl">Salva Chiave</button>
       </div>
     </div>
   </div>
@@ -154,31 +169,31 @@
   <main class="max-w-5xl mx-auto px-4 mt-6 no-print">
 
     <!-- BOX CARICAMENTO / FOTOCAMERA -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-[#8DBDC7]/60 p-5 mb-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <h2 class="font-bold text-base text-slate-900">1. Carica o Fotografa Fattura / D.D.T.</h2>
-          <p class="text-xs text-slate-500">I PDF vengono anonimizzati in locale (oscurando P.IVA, CF, IBAN e indirizzi) prima dell'analisi.</p>
+          <h2 class="font-extrabold text-base text-[#324A53]">1. Carica o Fotografa Fattura / D.D.T.</h2>
+          <p class="text-xs text-[#406A77]">I PDF vengono anonimizzati in locale (oscurando P.IVA, CF, IBAN e indirizzi) prima dell'analisi.</p>
         </div>
         <div class="flex items-center gap-2">
-          <label class="text-xs font-medium text-slate-600">Ricarico default:</label>
+          <label class="text-xs font-semibold text-[#406A77]">Ricarico default:</label>
           <div class="relative w-20">
-            <input type="number" id="defaultMarkup" value="25" class="w-full border border-slate-300 rounded-lg px-2 py-1 text-sm font-bold text-right pr-6" />
-            <span class="absolute right-2 top-1 text-xs text-slate-500">%</span>
+            <input type="number" id="defaultMarkup" value="25" class="w-full border border-[#8DBDC7] rounded-lg px-2 py-1 text-sm font-bold text-right pr-6 text-[#324A53]" />
+            <span class="absolute right-2 top-1 text-xs text-[#5F96A4]">%</span>
           </div>
         </div>
       </div>
 
       <!-- PULSANTI INPUT -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-        <label class="cursor-pointer bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white rounded-xl py-3.5 px-4 flex items-center justify-center gap-2.5 font-semibold text-sm shadow-sm transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <label class="cursor-pointer bg-[#406A77] hover:bg-[#324A53] active:scale-[0.99] text-white rounded-xl py-3.5 px-4 flex items-center justify-center gap-2.5 font-semibold text-sm shadow-sm transition">
+          <svg class="w-5 h-5 text-[#DCEFF1]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span>Scatta Foto (Fotocamera)</span>
           <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleFiles(this.files)" />
         </label>
 
-        <label class="cursor-pointer bg-slate-800 hover:bg-slate-900 active:scale-[0.99] text-white rounded-xl py-3.5 px-4 flex items-center justify-center gap-2.5 font-semibold text-sm shadow-sm transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        <label class="cursor-pointer bg-[#324A53] hover:bg-[#26383f] active:scale-[0.99] text-white rounded-xl py-3.5 px-4 flex items-center justify-center gap-2.5 font-semibold text-sm shadow-sm transition">
+          <svg class="w-5 h-5 text-[#8DBDC7]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
           <span>Carica File / Screenshot / PDF</span>
           <input type="file" accept="image/*,application/pdf" multiple class="hidden" onchange="handleFiles(this.files)" />
         </label>
@@ -187,14 +202,14 @@
       <!-- ANTEPRIMA FILE CARICATI -->
       <div id="previewContainer" class="hidden mb-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs font-semibold text-slate-600" id="fileCountLabel">0 file selezionati</span>
+          <span class="text-xs font-semibold text-[#406A77]" id="fileCountLabel">0 file selezionati</span>
           <button onclick="clearFiles()" class="text-xs text-red-600 hover:underline">Svuota tutto</button>
         </div>
         <div id="previewGrid" class="flex flex-wrap gap-2"></div>
       </div>
 
       <!-- PULSANTE ELABORA -->
-      <button id="analyzeBtn" onclick="analyzeInvoice()" disabled class="w-full bg-amber-500 disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-amber-600 text-slate-950 font-bold py-3.5 rounded-xl text-sm shadow-sm transition flex items-center justify-center gap-2">
+      <button id="analyzeBtn" onclick="analyzeInvoice()" disabled class="w-full bg-[#5F96A4] disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed hover:bg-[#406A77] text-white font-extrabold py-3.5 rounded-xl text-sm shadow-sm transition flex items-center justify-center gap-2">
         <span>⚡ Calcola Prezzi e Ricarichi</span>
       </button>
 
@@ -203,16 +218,16 @@
     </div>
 
     <!-- RISULTATI TABELLA A SCHERMO -->
-    <div id="resultsSection" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200">
+    <div id="resultsSection" class="hidden bg-white rounded-2xl shadow-sm border border-[#8DBDC7]/60 p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-[#DCEFF1]">
         <div>
-          <h2 class="font-bold text-lg text-slate-900">Listino Prezzi Calcolato (A-Z)</h2>
-          <p class="text-xs text-slate-500" id="invoiceMeta">Market Troiano - Via Gargano 148, Manfredonia</p>
+          <h2 class="font-extrabold text-lg text-[#324A53]">Listino Prezzi Calcolato (A-Z)</h2>
+          <p class="text-xs text-[#406A77]" id="invoiceMeta">Market Troiano - Via Gargano 148, Manfredonia</p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button onclick="addEmptyRow()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-300">+ Riga</button>
-          <button onclick="sortItemsAlphabetically()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-300">Ordina A-Z</button>
-          <button onclick="prepareAndPrint()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm">🖨️ Stampa / Salva PDF (1 Pagina)</button>
+          <button onclick="addEmptyRow()" class="bg-[#DCEFF1]/60 hover:bg-[#DCEFF1] text-[#324A53] text-xs font-bold px-3 py-2 rounded-lg border border-[#8DBDC7]">+ Riga</button>
+          <button onclick="sortItemsAlphabetically()" class="bg-[#DCEFF1]/60 hover:bg-[#DCEFF1] text-[#324A53] text-xs font-bold px-3 py-2 rounded-lg border border-[#8DBDC7]">Ordina A-Z</button>
+          <button onclick="prepareAndPrint()" class="bg-[#324A53] hover:bg-[#406A77] text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm">🖨️ Stampa / Salva PDF (1 Pagina)</button>
         </div>
       </div>
 
@@ -222,18 +237,18 @@
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr class="bg-slate-100 text-slate-700 border-b border-slate-300">
-              <th class="py-2.5 px-2 font-bold">Prodotto</th>
-              <th class="py-2.5 px-2 font-bold text-center w-16">Q.tà</th>
-              <th class="py-2.5 px-2 font-bold text-right w-24">Netto Unit.</th>
-              <th class="py-2.5 px-2 font-bold text-center w-16">IVA</th>
-              <th class="py-2.5 px-2 font-bold text-right w-24 bg-slate-200/60">Acq. Ivato</th>
-              <th class="py-2.5 px-2 font-bold text-center w-16">Ric.%</th>
-              <th class="py-2.5 px-2 font-bold text-right w-28 bg-emerald-50 text-emerald-900">Vendita</th>
+            <tr class="bg-[#DCEFF1] text-[#324A53] border-b border-[#8DBDC7]">
+              <th class="py-2.5 px-2 font-extrabold">Prodotto</th>
+              <th class="py-2.5 px-2 font-extrabold text-center w-16">Q.tà</th>
+              <th class="py-2.5 px-2 font-extrabold text-right w-24">Netto Unit.</th>
+              <th class="py-2.5 px-2 font-extrabold text-center w-16">IVA</th>
+              <th class="py-2.5 px-2 font-extrabold text-right w-24 bg-[#8DBDC7]/30">Acq. Ivato</th>
+              <th class="py-2.5 px-2 font-extrabold text-center w-16">Ric.%</th>
+              <th class="py-2.5 px-2 font-extrabold text-right w-28 bg-[#324A53] text-white">Vendita</th>
               <th class="py-2.5 px-1 w-8"></th>
             </tr>
           </thead>
-          <tbody id="productsTableBody" class="divide-y divide-slate-200"></tbody>
+          <tbody id="productsTableBody" class="divide-y divide-[#DCEFF1]"></tbody>
         </table>
       </div>
     </div>
@@ -321,43 +336,35 @@
       selectedFiles.forEach((file, idx) => {
         const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
         const badge = document.createElement('div');
-        badge.className = 'relative bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 text-xs flex items-center gap-2 max-w-[240px]';
+        badge.className = 'relative bg-[#DCEFF1]/60 border border-[#8DBDC7] rounded-lg px-3 py-2 text-xs flex items-center gap-2 max-w-[240px] text-[#324A53]';
         badge.innerHTML = `
-          <span class="truncate font-medium">${isPdf ? '🔒 ' : ''}${file.name}</span>
+          <span class="truncate font-semibold">${isPdf ? '🔒 ' : ''}${file.name}</span>
           <button onclick="removeFile(${idx})" class="text-red-600 font-bold hover:text-red-800">✕</button>
         `;
         grid.appendChild(badge);
       });
     }
 
-    // Oscura in locale dati personali/fiscali estratti dai PDF prima dell'invio
     function sanitizeSensitiveText(rawText) {
       let text = rawText;
 
-      // Dati aziendali / anagrafici specifici del destinatario
       text = text.replace(/market\s*troiano[^\n]*/gi, '[CLIENTE OSCURATO]');
       text = text.replace(/troiano\s*(franco|nico|nicola|natalia)[^\n]*/gi, '[INTESTATARIO OSCURATO]');
       text = text.replace(/via\s+gargano\s*\d*[^\n]*/gi, '[INDIRIZZO OSCURATO]');
       text = text.replace(/71043\s*manfredonia[^\n]*/gi, '[CAP/CITTÀ OSCURATI]');
 
-      // IBAN italiani ed europei
       text = text.replace(/\bIT\d{2}[A-Z0-9]{23}\b/gi, '[IBAN OSCURATO]');
       text = text.replace(/\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g, '[IBAN OSCURATO]');
 
-      // Codice Fiscale italiano (16 caratteri alfanumerici)
       text = text.replace(/\b[A-Z]{6}\d{2}[A-EHLMPR-T]\d{2}[A-Z]\d{3}[A-Z]\b/gi, '[CF OSCURATO]');
 
-      // Partita IVA (11 cifre precedute da P.IVA, PI, IT, Partita Iva, C.F.)
       text = text.replace(/(?:p\.?\s*iva|partita\s*iva|c\.?\s*f\.?|cod\.?\s*fisc\.?)\s*:?\s*(?:IT)?\s*\d{11}\b/gi, '[P.IVA/CF OSCURATI]');
       text = text.replace(/\bIT\d{11}\b/gi, '[P.IVA OSCURATA]');
 
-      // Email e PEC
       text = text.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL/PEC OSCURATA]');
 
-      // Codice Destinatario SDI (es. Codice Destinatario: XXXXXXX)
       text = text.replace(/(?:codice\s*destinatario|cod\.?\s*sdi|sdi)\s*:?\s*[A-Z0-9]{7}\b/gi, '[CODICE SDI OSCURATO]');
 
-      // Numeri di telefono / fax
       text = text.replace(/(?:tel\.?|telefono|cell\.?|fax)\s*:?\s*[\+\d\s\-\/]{7,18}/gi, '[TELEFONO OSCURATO]');
 
       return text;
@@ -373,7 +380,6 @@
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           const page = await pdf.getPage(pageNum);
           const content = await page.getTextContent();
-          // Ricostruisce le righe rispettando la posizione verticale (Y) degli elementi
           let lastY = null;
           let pageLines = [];
           let currentLine = [];
@@ -392,7 +398,6 @@
         }
 
         const cleaned = fullText.trim();
-        // Se il PDF contiene testo selezionabile reale (non è una scansione muta)
         if (cleaned.length > 80) {
           return sanitizeSensitiveText(cleaned);
         }
@@ -403,7 +408,6 @@
       }
     }
 
-    // Prepara ogni file: se è PDF estrae e anonimizza il testo in locale; se è foto la ottimizza in HD
     async function prepareFilePart(file) {
       const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 
@@ -414,7 +418,6 @@
             text: `\n=== CONTENUTO PDF ANONIMIZZATO (${file.name}) ===\n${sanitizedText}\n=== FINE PDF ===\n`
           };
         }
-        // Fallback se il PDF è solo una scansione fotografica senza testo selezionabile
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve({
@@ -425,7 +428,6 @@
         });
       }
 
-      // Immagine / Foto / Screenshot: alta definizione (2400px, qualità 0.90)
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -488,15 +490,15 @@
 
     function showStatus(msg, type = 'info') {
       const box = document.getElementById('statusBox');
-      box.classList.remove('hidden', 'bg-blue-50', 'text-blue-800', 'bg-red-50', 'text-red-800', 'bg-emerald-50', 'text-emerald-800');
+      box.classList.remove('hidden', 'bg-[#DCEFF1]', 'text-[#324A53]', 'bg-red-50', 'text-red-800', 'bg-[#8DBDC7]/30');
       if (type === 'loading') {
-        box.classList.add('bg-blue-50', 'text-blue-800');
-        box.innerHTML = `<div class="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin shrink-0"></div><span>${msg}</span>`;
+        box.classList.add('bg-[#DCEFF1]', 'text-[#324A53]');
+        box.innerHTML = `<div class="w-4 h-4 border-2 border-[#324A53] border-t-transparent rounded-full animate-spin shrink-0"></div><span>${msg}</span>`;
       } else if (type === 'error') {
         box.classList.add('bg-red-50', 'text-red-800');
         box.innerHTML = `<span>⚠️ ${msg}</span>`;
       } else {
-        box.classList.add('bg-emerald-50', 'text-emerald-800');
+        box.classList.add('bg-[#8DBDC7]/30', 'text-[#324A53]', 'font-semibold');
         box.innerHTML = `<span>✅ ${msg}</span>`;
       }
     }
@@ -665,13 +667,13 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
       if (docTotals.imponibile !== null && docTotals.imponibile > 0) {
         const diff = Math.abs(calcImponibile - docTotals.imponibile);
         if (diff <= 0.15) {
-          box.className = 'mb-4 p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+          box.className = 'mb-4 p-3 rounded-xl border border-[#5F96A4] bg-[#DCEFF1]/70 text-[#324A53] text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
           box.innerHTML = `
             <div>
               <strong>✅ Quadratura Contabile OK:</strong> Imponibile calcolato <strong>${calcImponibile.toFixed(2)} €</strong> vs Fattura <strong>${docTotals.imponibile.toFixed(2)} €</strong>.
               ${uncertainBadge}
             </div>
-            <div class="text-xs text-emerald-700">Tot. Ivato stimato: <strong>${calcIvato.toFixed(2)} €</strong></div>
+            <div class="text-xs text-[#406A77]">Tot. Ivato stimato: <strong>${calcIvato.toFixed(2)} €</strong></div>
           `;
         } else {
           box.className = 'mb-4 p-3 rounded-xl border border-red-300 bg-red-50 text-red-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
@@ -686,13 +688,13 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
       } else if (docTotals.totaleIvato !== null && docTotals.totaleIvato > 0) {
         const diff = Math.abs(calcIvato - docTotals.totaleIvato);
         if (diff <= 0.20) {
-          box.className = 'mb-4 p-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+          box.className = 'mb-4 p-3 rounded-xl border border-[#5F96A4] bg-[#DCEFF1]/70 text-[#324A53] text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
           box.innerHTML = `
             <div>
               <strong>✅ Quadratura Totale OK:</strong> Ivato calcolato <strong>${calcIvato.toFixed(2)} €</strong> vs Fattura <strong>${docTotals.totaleIvato.toFixed(2)} €</strong>.
               ${uncertainBadge}
             </div>
-            <div class="text-xs text-emerald-700">Imponibile calcolato: <strong>${calcImponibile.toFixed(2)} €</strong></div>
+            <div class="text-xs text-[#406A77]">Imponibile calcolato: <strong>${calcImponibile.toFixed(2)} €</strong></div>
           `;
         } else {
           box.className = 'mb-4 p-3 rounded-xl border border-red-300 bg-red-50 text-red-900 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
@@ -704,13 +706,13 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
           `;
         }
       } else {
-        box.className = 'mb-4 p-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-800 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+        box.className = 'mb-4 p-3 rounded-xl border border-[#8DBDC7] bg-[#F2F7F8] text-[#324A53] text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2';
         box.innerHTML = `
           <div>
             <strong>Riepilogo Calcolato:</strong> Imponibile righe <strong>${calcImponibile.toFixed(2)} €</strong> • Totale Ivato <strong>${calcIvato.toFixed(2)} €</strong>.
             ${uncertainBadge}
           </div>
-          <span class="text-xs text-slate-500">Totale documento non visibile</span>
+          <span class="text-xs text-[#406A77]">Totale documento non visibile</span>
         `;
       }
     }
@@ -722,39 +724,39 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
       productsData.forEach((item, index) => {
         const { acqIvato, vendita } = calculateRowPrices(item);
         const tr = document.createElement('tr');
-        tr.className = item.incerto ? 'bg-amber-100/80 hover:bg-amber-100' : 'hover:bg-slate-50';
+        tr.className = item.incerto ? 'bg-amber-100/80 hover:bg-amber-100' : 'hover:bg-[#DCEFF1]/30';
 
         tr.innerHTML = `
           <td class="py-2 px-2">
             <div class="flex items-center gap-1">
               ${item.incerto ? '<span title="Cifra poco nitida: verifica e modifica se necessario" class="text-amber-600 font-bold">⚠️</span>' : ''}
-              <input type="text" value="${item.nome.replace(/"/g, '&quot;')}" onchange="updateItem(${index}, 'nome', this.value)" class="w-full font-medium text-slate-900 bg-transparent border-b border-transparent focus:border-emerald-500 focus:outline-none" />
+              <input type="text" value="${item.nome.replace(/"/g, '"')}" onchange="updateItem(${index}, 'nome', this.value)" class="w-full font-semibold text-[#324A53] bg-transparent border-b border-transparent focus:border-[#406A77] focus:outline-none" />
             </div>
           </td>
           <td class="py-2 px-2 text-center">
-            <input type="number" step="0.01" value="${item.quantita}" onchange="updateItem(${index}, 'quantita', this.value)" class="w-14 text-center bg-transparent border-b border-slate-200 focus:border-emerald-500 focus:outline-none" />
+            <input type="number" step="0.01" value="${item.quantita}" onchange="updateItem(${index}, 'quantita', this.value)" class="w-14 text-center bg-transparent border-b border-[#8DBDC7] focus:border-[#324A53] focus:outline-none" />
           </td>
           <td class="py-2 px-2 text-right">
-            <input type="number" step="0.001" value="${item.netto}" onchange="updateItem(${index}, 'netto', this.value)" class="w-20 text-right bg-transparent border-b border-slate-200 focus:border-emerald-500 focus:outline-none" /> €
+            <input type="number" step="0.001" value="${item.netto}" onchange="updateItem(${index}, 'netto', this.value)" class="w-20 text-right bg-transparent border-b border-[#8DBDC7] focus:border-[#324A53] focus:outline-none" /> €
           </td>
           <td class="py-2 px-2 text-center">
-            <select onchange="updateItem(${index}, 'iva', this.value)" class="bg-transparent font-medium text-slate-700 focus:outline-none">
+            <select onchange="updateItem(${index}, 'iva', this.value)" class="bg-transparent font-semibold text-[#406A77] focus:outline-none">
               <option value="4" ${item.iva == 4 ? 'selected' : ''}>4%</option>
               <option value="10" ${item.iva == 10 ? 'selected' : ''}>10%</option>
               <option value="22" ${item.iva == 22 ? 'selected' : ''}>22%</option>
             </select>
           </td>
-          <td class="py-2 px-2 text-right font-semibold text-slate-700 bg-slate-100/70">
+          <td class="py-2 px-2 text-right font-semibold text-[#406A77] bg-[#F2F7F8]">
             ${acqIvato} €
           </td>
           <td class="py-2 px-2 text-center">
-            <input type="number" step="1" value="${item.ricarico}" onchange="updateItem(${index}, 'ricarico', this.value)" class="w-12 text-center bg-transparent border-b border-slate-200 focus:border-emerald-500 focus:outline-none" />%
+            <input type="number" step="1" value="${item.ricarico}" onchange="updateItem(${index}, 'ricarico', this.value)" class="w-12 text-center bg-transparent border-b border-[#8DBDC7] focus:border-[#324A53] focus:outline-none" />%
           </td>
-          <td class="py-2 px-2 text-right font-bold text-emerald-800 bg-emerald-50/80 text-sm sm:text-base">
+          <td class="py-2 px-2 text-right font-black text-[#324A53] bg-[#DCEFF1]/70 text-sm sm:text-base">
             ${vendita} €
           </td>
           <td class="py-2 px-1 text-center">
-            <button onclick="deleteRow(${index})" class="text-slate-400 hover:text-red-600 font-bold">✕</button>
+            <button onclick="deleteRow(${index})" class="text-[#5F96A4] hover:text-red-600 font-bold">✕</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -857,7 +859,7 @@ Rispondi ESCLUSIVAMENTE con un oggetto JSON valido con questa struttura:
 
       printSheet.innerHTML = `
         <div class="print-header">
-          <h1>Market Troiano — Listino Prezzi (A-Z)</h1>
+          <h1>PrezzoFacile • Market Troiano — Listino Prezzi (A-Z)</h1>
           <span>${headerSubtitle}</span>
         </div>
         ${bodyHtml}
