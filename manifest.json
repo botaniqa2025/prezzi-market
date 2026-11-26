@@ -1,0 +1,23 @@
+{
+  "name": "PrezzoFacile • Market Troiano",
+  "short_name": "PrezzoFacile",
+  "start_url": "/prezzi-market/",
+  "scope": "/prezzi-market/",
+  "display": "standalone",
+  "background_color": "#324A53",
+  "theme_color": "#324A53",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%23324A53'/%3E%3Ctext x='50%25' y='46%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial,sans-serif' font-weight='900' font-size='190' fill='%23FFFFFF'%3EPF%3C/text%3E%3Crect x='136' y='355' width='240' height='26' rx='13' fill='%238DBDC7'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
